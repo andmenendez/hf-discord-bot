@@ -1,0 +1,12 @@
+[build]
+  [build.args]
+    PYTHON_VERSION = "3.11"
+
+[processes]
+  worker = "python bot.py"
+
+# No HTTP service — this is a background worker only
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
