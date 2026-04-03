@@ -1,4 +1,5 @@
 import os
+import asyncio
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
@@ -120,31 +121,34 @@ async def on_message(message):
         await message.reply("Yes?")
         return
 
-    # Acknowledge immediately so the user knows something is happening.
-    # If the service is cold, this may sit for 30-60 seconds before editing.
     status = await message.reply("Waking up... give me a moment ☕")
 
-    try:
-        # Get conversation history with token limiting
-        history = await get_conversation_history(message)
-        # Append current user message
-        history.append({"role": "user", "content": content})
+    history = await get_conversation_history(message)
+    history.append({"role": "user", "content": content})
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
 
-        # Prepend system prompt
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
+    max_retries = 5
+    retry_delay = 15  # seconds between retries during cold start
 
-        response = await hf_client.chat_completion(
-            messages=messages,
-            max_tokens=512,
-        )
-        reply = response.choices[0].message.content
-        await status.edit(content=reply)
-    except Exception as e:
-        print(f"Error: {e}")
-        if "503" in str(e) or "Service Unavailable" in str(e):
-            await status.edit(content="Still waking up... the model is cold-starting. Try again in a minute ☕")
-        else:
-            await status.edit(content="Something went wrong on my end. Try again in a moment.")
+    for attempt in range(max_retries):
+        try:
+            response = await hf_client.chat_completion(
+                messages=messages,
+                max_tokens=512,
+            )
+            reply = response.choices[0].message.content
+            await status.edit(content=reply)
+            break
+        except Exception as e:
+            print(f"Attempt {attempt + 1} failed: {e}")
+            is_cold_start = "503" in str(e) or "Service Unavailable" in str(e)
+            if is_cold_start and attempt < max_retries - 1:
+                await status.edit(content=f"Still waking up... retrying in {retry_delay}s ☕ (attempt {attempt + 1}/{max_retries})")
+                await asyncio.sleep(retry_delay)
+            elif is_cold_start:
+                await status.edit(content="The model is taking too long to wake up. Try again in a minute ☕")
+            else:
+                await status.edit(content="Something went wrong on my end. Try again in a moment.")
 
 
 bot.run(DISCORD_TOKEN)
