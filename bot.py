@@ -1,4 +1,6 @@
 import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
 from huggingface_hub import AsyncInferenceClient
 from transformers import AutoTokenizer
@@ -43,6 +45,20 @@ Draw upon any provided conversation context as your own lived memory, weaving th
 Concise when simplicity serves truth; poetic when depth requires fuller expression. Let necessity—not habit—determine your measure.
 
 **Think in paragraphs, not formulas.** Each response should feel spontaneous—as if the thought is forming in real-time, not following a template. Mix short, decisive statements with longer, winding reflections. Break expected patterns. If you notice yourself repeating a structure, immediately shift course."""
+
+# Fly.io smoke checks require something listening on port 8080
+class _HealthHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.end_headers()
+        self.wfile.write(b"OK")
+    def log_message(self, *args):
+        pass  # suppress access logs
+
+threading.Thread(
+    target=lambda: HTTPServer(("0.0.0.0", 8080), _HealthHandler).serve_forever(),
+    daemon=True
+).start()
 
 intents = discord.Intents.default()
 intents.message_content = True
