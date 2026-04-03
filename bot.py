@@ -3,7 +3,6 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import discord
 from huggingface_hub import AsyncInferenceClient
-from transformers import AutoTokenizer
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -67,13 +66,9 @@ bot = discord.Client(intents=intents)
 # 3-minute timeout to survive cold-start warm-up (~15 min inactivity resets the service)
 hf_client = AsyncInferenceClient(base_url=HF_ENDPOINT, token=HF_API_KEY, timeout=180)
 
-# Load tokenizer for token counting
-tokenizer = AutoTokenizer.from_pretrained("meta-llama/Llama-3.1-8B-Instruct")
-
-
 def count_tokens(text):
-    """Count tokens in text using Llama tokenizer."""
-    return len(tokenizer.encode(text))
+    # ~1.3 tokens per word is a good approximation for Llama models
+    return int(len(text.split()) * 1.3)
 
 
 async def get_conversation_history(message, max_tokens=MAX_HISTORY_TOKENS):
