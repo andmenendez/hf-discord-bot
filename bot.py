@@ -141,7 +141,10 @@ async def on_message(message):
         await status.edit(content=reply)
     except Exception as e:
         print(f"Error: {e}")
-        await status.edit(content=f"Something went wrong: {e}")
+        if "503" in str(e) or "Service Unavailable" in str(e):
+            await status.edit(content="Still waking up... the model is cold-starting. Try again in a minute ☕")
+        else:
+            await status.edit(content="Something went wrong on my end. Try again in a moment.")
 
 
 bot.run(DISCORD_TOKEN)
