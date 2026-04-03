@@ -121,7 +121,14 @@ async def on_message(message):
         await message.reply("Yes?")
         return
 
-    status = await message.reply("Waking up... give me a moment ☕")
+    status = await message.reply("*pondering the abyss...*")
+
+    # After 8 seconds with no response, hint that it might be a cold start
+    async def escalate_message():
+        await asyncio.sleep(8)
+        await status.edit(content="*Nietzsche descends slowly from the mountain... the model is waking up* ☕")
+
+    escalate_task = asyncio.create_task(escalate_message())
 
     history = await get_conversation_history(message)
     history.append({"role": "user", "content": content})
@@ -137,6 +144,7 @@ async def on_message(message):
                 model="meta-llama/Llama-3.1-8B-Instruct",
                 max_tokens=512,
             )
+            escalate_task.cancel()
             reply = response.choices[0].message.content
             await status.edit(content=reply)
             break
@@ -144,12 +152,12 @@ async def on_message(message):
             print(f"Attempt {attempt + 1} failed: {e}")
             is_cold_start = "503" in str(e) or "Service Unavailable" in str(e)
             if is_cold_start and attempt < max_retries - 1:
-                await status.edit(content=f"Still waking up... retrying in {retry_delay}s ☕ (attempt {attempt + 1}/{max_retries})")
+                await status.edit(content=f"*Still descending from the mountain... retrying in {retry_delay}s* ☕")
                 await asyncio.sleep(retry_delay)
             elif is_cold_start:
-                await status.edit(content="The model is taking too long to wake up. Try again in a minute ☕")
+                await status.edit(content="*Even Zarathustra must rest. The model is unreachable — try again in a moment.*")
             else:
-                await status.edit(content="Something went wrong on my end. Try again in a moment.")
+                await status.edit(content="*Something stirred in the abyss, but it did not answer. Try again.*")
 
 
 bot.run(DISCORD_TOKEN)
