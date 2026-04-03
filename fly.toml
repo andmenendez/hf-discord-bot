@@ -1,5 +1,8 @@
 [build]
 
+[deploy]
+  strategy = "immediate"
+
 # No HTTP service — this is a background worker only
 [[vm]]
   memory = "256mb"
