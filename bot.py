@@ -134,6 +134,7 @@ async def on_message(message):
         try:
             response = await hf_client.chat_completion(
                 messages=messages,
+                model="meta-llama/Llama-3.1-8B-Instruct",
                 max_tokens=512,
             )
             reply = response.choices[0].message.content
