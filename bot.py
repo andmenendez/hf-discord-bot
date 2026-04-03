@@ -125,7 +125,7 @@ async def on_message(message):
 
     # After 8 seconds with no response, hint that it might be a cold start
     async def escalate_message():
-        await asyncio.sleep(8)
+        await asyncio.sleep(20)
         await status.edit(content="> I have been away. Give me a moment.")
 
     escalate_task = asyncio.create_task(escalate_message())
